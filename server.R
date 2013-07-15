@@ -5,31 +5,15 @@ library(datasets)
 mpgData <- mtcars
 mpgData <- mpgData[,-9]
 
-center.and.scale <- function(inputDF) {
-  num.vec <- logical(length = ncol(inputDF))
-  for (i in 1:length(num.vec)) {
-    num.vec[i] <- is.numeric(inputDF[1,i])
-  }
-  
-  tempDF <- inputDF[ ,num.vec]
-  inputMean <- colMeans(tempDF, na.rm=TRUE)
-  inputSD <- apply(tempDF, 2, sd, na.rm=TRUE)
-  
-  for (i in 1:ncol(inputDF)) {
-    tempDF[,i] <- tempDF[,i] - inputMean[i] / inputSD[i]
-  }
-  
-  count <- 0 
-  for (i in 1:length(num.vec)) {
-    if (num.vec[i]) {
-      count <- count + 1
-      inputDF[,i] <- tempDF[,count]
-    }
-  }
-  return(inputDF)
-}
-
 shinyServer(function(input, output) {
+  
+  output$contents <- renderTable({
+    inFile <- input$file1
+    
+    if (is.null(inFile)) return(NULL);
+    
+    read.csv(inFile$datapath, header = input$header, sep = input$sep, quote = input$quote)
+  })
   
   output$table <- renderTable({
     if (input$cntr_scl) {
@@ -42,9 +26,17 @@ shinyServer(function(input, output) {
     if (input$cntr_scl) {
       mpgData <- center.and.scale(mpgData)
     }
-    cor.test(mpgData$mpg, mpgData$wt, 
-             alternative = input$Ha, method = input$cor_method,
-             conf.level = input$conf_lvl)
+    
+    for (i in 2:ncol(mpgData)) {
+      print(cor.test(mpgData$mpg, mpgData[,i], 
+                     alternative = input$Ha, method = input$cor_method,
+                     conf.level = input$conf_lvl))
+    }
   })
 })
+
+
+
+
+
 
